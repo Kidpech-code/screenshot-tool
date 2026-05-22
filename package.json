@@ -1,0 +1,20 @@
+{
+  "name": "screenshot-tool",
+  "version": "1.0.0",
+  "description": "Full-page web screenshot tool with animation bypass",
+  "main": "screenshot.js",
+  "bin": {
+    "screenshot": "./screenshot.js"
+  },
+  "scripts": {
+    "start": "node screenshot.js",
+    "setup": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": ">=1.44.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

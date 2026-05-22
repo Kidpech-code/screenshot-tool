@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Screenshot & PDF outputs
+screenshots/
+*.png
+*.pdf
+
+# Config files with credentials (cookies, tokens)
+.screenshotrc.json
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+*.swp
