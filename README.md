@@ -73,9 +73,9 @@ node screenshot.js -u https://github.com/Kidpech-code --widths 375 768 1440
     <th align="center">1440px</th>
   </tr>
   <tr>
-    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_375.png" width="210" alt="375px"></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_768.png" width="210" alt="768px"></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_1440.png" width="210" alt="1440px"></td>
+    <td align="center" valign="top"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_375.png" width="210" alt="375px"></td>
+    <td align="center" valign="top"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_768.png" width="210" alt="768px"></td>
+    <td align="center" valign="top"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_1440.png" width="210" alt="1440px"></td>
   </tr>
 </table>
 
@@ -115,9 +115,9 @@ node screenshot.js -u https://github.com/Kidpech-code --widths 375 768 1440 --re
     <th align="center">1440px</th>
   </tr>
   <tr>
-    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_375.png" width="210" alt="report 375px"></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_768.png" width="210" alt="report 768px"></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_1440.png" width="210" alt="report 1440px"></td>
+    <td align="center" valign="top"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_375.png" width="210" alt="report 375px"></td>
+    <td align="center" valign="top"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_768.png" width="210" alt="report 768px"></td>
+    <td align="center" valign="top"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_1440.png" width="210" alt="report 1440px"></td>
   </tr>
 </table>
 
