@@ -202,20 +202,68 @@ node screenshot.js -u https://github.com/Kidpech-code --widths 375 768 1440 --re
 
 ## การติดตั้ง
 
-### Node.js (แนะนำ)
+### ขั้นตอนที่ 1 — ดาวน์โหลด tool นี้
+
+เลือกวิธีใดวิธีหนึ่ง:
+
+**วิธี A — ใช้ Git (แนะนำ)**
 
 ```bash
-# 1. เข้า folder
-cd "screenshot tool"
+git clone https://github.com/Kidpech-code/screenshot-tool.git
+```
 
-# 2. ติดตั้ง dependencies
+> ได้ folder ชื่อ `screenshot-tool` มาในเครื่อง
+
+**วิธี B — ดาวน์โหลด ZIP**
+
+1. ไปที่ [github.com/Kidpech-code/screenshot-tool](https://github.com/Kidpech-code/screenshot-tool)
+2. กดปุ่ม **Code → Download ZIP**
+3. แตก ZIP แล้วได้ folder `screenshot-tool`
+
+---
+
+### ขั้นตอนที่ 2 — วาง folder ในตำแหน่งที่ต้องการ
+
+วาง folder `screenshot-tool` ไว้ **ข้างๆ โปรเจ็กต์** ที่ต้องการถ่ายภาพ เช่น:
+
+```
+Desktop/
+├── my-website/          ← โปรเจ็กต์ของคุณ
+│   ├── index.html
+│   └── about.html
+└── screenshot-tool/     ← วาง tool ไว้ตรงนี้
+    ├── screenshot.js
+    └── package.json
+```
+
+> วางไว้ที่ไหนก็ได้ในเครื่อง ไม่ต้องอยู่ใน folder โปรเจ็กต์
+
+---
+
+### ขั้นตอนที่ 3 — ติดตั้ง dependencies
+
+#### Node.js (แนะนำ)
+
+```bash
+# เข้าไปใน folder ของ tool
+cd screenshot-tool
+
+# ติดตั้ง packages
 npm install
 
-# 3. ติดตั้ง Chromium browser (ครั้งเดียว)
+# ติดตั้ง Chromium browser (ทำครั้งเดียว)
 npx playwright install chromium
 ```
 
-### Python (ทางเลือก)
+ตรวจสอบว่าติดตั้งสำเร็จ:
+
+```bash
+node screenshot.js --help
+```
+
+> ถ้าเห็นหน้า help แสดงว่าพร้อมใช้งานแล้ว ✅
+
+#### Python (ทางเลือก)
 
 ```bash
 pip install playwright tqdm
