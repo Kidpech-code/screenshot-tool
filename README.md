@@ -7,18 +7,82 @@
 
 ## สารบัญ
 
-1. [ความต้องการ](#ความต้องการ)
-2. [การติดตั้ง](#การติดตั้ง)
-3. [โครงสร้างไฟล์](#โครงสร้างไฟล์)
-4. [3 โหมดการใช้งาน](#3-โหมดการใช้งาน)
-5. [ตัวเลือก CLI ทั้งหมด](#ตัวเลือก-cli-ทั้งหมด)
-6. [ตัวอย่างการใช้งาน](#ตัวอย่างการใช้งาน)
-7. [Mobile & Dark Mode](#mobile--dark-mode)
-8. [การยืนยันตัวตน (Auth)](#การยืนยันตัวตน-auth)
-9. [Config File](#config-file)
-10. [Python Version](#python-version)
-11. [ฟีเจอร์เทคนิค](#ฟีเจอร์เทคนิค)
-12. [Troubleshooting](#troubleshooting)
+1. [Tech Stack](#tech-stack)
+2. [ความต้องการ](#ความต้องการ)
+3. [การติดตั้ง](#การติดตั้ง)
+4. [โครงสร้างไฟล์](#โครงสร้างไฟล์)
+5. [3 โหมดการใช้งาน](#3-โหมดการใช้งาน)
+6. [ตัวเลือก CLI ทั้งหมด](#ตัวเลือก-cli-ทั้งหมด)
+7. [ตัวอย่างการใช้งาน](#ตัวอย่างการใช้งาน)
+8. [Mobile & Dark Mode](#mobile--dark-mode)
+9. [การยืนยันตัวตน (Auth)](#การยืนยันตัวตน-auth)
+10. [Config File](#config-file)
+11. [Python Version](#python-version)
+12. [ฟีเจอร์เทคนิค](#ฟีเจอร์เทคนิค)
+13. [Troubleshooting](#troubleshooting)
+
+---
+
+## Tech Stack
+
+### Runtime & Language
+
+| Layer       | Primary                       | Alternative        |
+| ----------- | ----------------------------- | ------------------ |
+| Runtime     | **Node.js** 18+               | **Python** 3.10+   |
+| Language    | JavaScript (ES2022, CommonJS) | Python 3 (asyncio) |
+| Entry point | `screenshot.js`               | `screenshot.py`    |
+
+### Browser Automation
+
+| Library                                   | เวอร์ชัน               | บทบาท                                                                 |
+| ----------------------------------------- | ---------------------- | --------------------------------------------------------------------- |
+| **[Playwright](https://playwright.dev/)** | ≥ 1.44.0               | ควบคุม Chromium headless — เปิดหน้า, inject CSS/JS, ถ่ายภาพ full-page |
+| **Chromium** (headless)                   | bundled กับ Playwright | browser engine จริง — render HTML/CSS เหมือน Chrome                   |
+
+### Node.js — Dependencies
+
+| Package      | ที่มา            | บทบาท                                     |
+| ------------ | ---------------- | ----------------------------------------- |
+| `playwright` | npm              | browser automation                        |
+| `path`, `fs` | Node.js built-in | จัดการ path และไฟล์ระบบ                   |
+| `readline`   | Node.js built-in | interactive mode (รับ input จาก terminal) |
+
+### Python — Dependencies
+
+| Package                  | ที่มา    | บทบาท                                 |
+| ------------------------ | -------- | ------------------------------------- |
+| `playwright` (async API) | pip      | browser automation                    |
+| `tqdm`                   | pip      | progress bar แสดงความคืบหน้า          |
+| `asyncio`                | built-in | async/await สำหรับ concurrent workers |
+| `argparse`               | built-in | parse CLI arguments                   |
+| `pathlib`                | built-in | จัดการ path แบบ cross-platform        |
+
+### Architecture Overview
+
+```
+ CLI / Interactive Mode
+        │
+        ▼
+  Argument Parser  ──── Config File (.screenshotrc.json)
+        │
+        ▼
+  Playwright Browser (Chromium, 1 instance)
+        │
+        ├── Context 1 → Page → inject CSS → screenshot → PNG/PDF
+        ├── Context 2 → Page → inject CSS → screenshot → PNG/PDF
+        └── Context N → ...  (parallel workers, default = 3)
+                                      │
+                                      ▼
+                            screenshots/<folder>/<page>.png
+```
+
+### Output Formats
+
+| Format  | Flag      | คำอธิบาย                            |
+| ------- | --------- | ----------------------------------- |
+| **PNG** | (default) | full-page screenshot ความละเอียดสูง |
+| **PDF** | `--pdf`   | export เป็น PDF สำหรับงานพิมพ์      |
 
 ---
 
