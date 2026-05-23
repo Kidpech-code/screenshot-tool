@@ -79,10 +79,12 @@
 
 ### Output Formats
 
-| Format  | Flag      | คำอธิบาย                            |
-| ------- | --------- | ----------------------------------- |
-| **PNG** | (default) | full-page screenshot ความละเอียดสูง |
-| **PDF** | `--pdf`   | export เป็น PDF สำหรับงานพิมพ์      |
+| Format     | Flag            | คำอธิบาย                                       |
+| ---------- | --------------- | ---------------------------------------------- |
+| **PNG**    | (default)       | full-page screenshot ความละเอียดสูง (lossless) |
+| **JPEG**   | `--format jpeg` | ไฟล์เล็กกว่า PNG (lossy)                       |
+| **PDF**    | `--pdf`         | export เป็น PDF สำหรับงานพิมพ์                 |
+| **Report** | `--report`      | สร้าง `report.html` gallery รวมทุกภาพ          |
 
 ---
 
@@ -227,8 +229,9 @@ node screenshot.js
 1. Root path of project [.]: /Users/me/my-project
 2. Folder names to capture (space-separated): pattern_a pattern_b
 3. Page names without .html (Enter = auto-scan all): index about
-4. Viewport width in px [1440]: 1440
+4. Viewport width(s) in px, space-separated [1440]: 375 768 1440
 5. Output folder [./screenshots]: ./screenshots
+6. Generate HTML gallery report? [y/N]: y
 ```
 
 ---
@@ -247,19 +250,25 @@ node screenshot.js
 
 ### Output (ผลลัพธ์)
 
-| Flag           | ย่อ  | Default         | คำอธิบาย               |
-| -------------- | ---- | --------------- | ---------------------- |
-| `--out <path>` | `-o` | `./screenshots` | Output directory       |
-| `--pdf`        | —    | false           | ส่งออกเป็น PDF แทน PNG |
+| Flag                | ย่อ  | Default         | คำอธิบาย                    |
+| ------------------- | ---- | --------------- | --------------------------- |
+| `--out <path>`      | `-o` | `./screenshots` | Output directory            |
+| `--pdf`             | —    | false           | ส่งออกเป็น PDF แทนภาพ       |
+| `--format <type>`   | —    | `png`           | รูปแบบไฟล์: `png`, `jpeg`   |
+| `--quality <0-100>` | —    | `80`            | คุณภาพสำหรับ jpeg           |
+| `--report`          | —    | false           | สร้าง `report.html` gallery |
 
 ### Viewport (ขนาดหน้าจอ)
 
-| Flag                | ย่อ  | Default | คำอธิบาย                        |
-| ------------------- | ---- | ------- | ------------------------------- |
-| `--width <px>`      | `-w` | `1440`  | ความกว้าง viewport              |
-| `--height <px>`     | —    | `900`   | ความสูง viewport เริ่มต้น       |
-| `--device <preset>` | —    | —       | Mobile preset (ดูตารางด้านล่าง) |
-| `--dark-mode`       | —    | false   | Emulate dark color scheme       |
+| Flag                | ย่อ  | Default | คำอธิบาย                                 |
+| ------------------- | ---- | ------- | ---------------------------------------- |
+| `--width <px>`      | `-w` | `1440`  | ความกว้าง viewport                       |
+| `--widths <px...>`  | —    | —       | หลาย viewport ในรอบเดียว: `375 768 1440` |
+| `--height <px>`     | —    | `900`   | ความสูง viewport เริ่มต้น                |
+| `--device <preset>` | —    | —       | Mobile preset (ดูตารางด้านล่าง)          |
+| `--dark-mode`       | —    | false   | Emulate dark color scheme                |
+
+> **หมายเหตุ:** `--widths` และ `--device` ใช้พร้อมกันไม่ได้
 
 #### Device Presets
 
@@ -325,9 +334,36 @@ node screenshot.js -u https://example.com -w 768
 
 # Mobile
 node screenshot.js -u https://example.com --device iphone-14
+
+# หลาย viewport พร้อมกัน (สร้างไฟล์แยกตาม width suffix)
+node screenshot.js -u https://example.com --widths 375 768 1440
+
+# หลาย viewport + report gallery
+node screenshot.js -r . -d site --scan --widths 375 768 1440 --report
 ```
 
-### เพิ่มความเร็ว
+### HTML Gallery Report
+
+```bash
+# สร้าง report.html รวมภาพทั้งหมด
+node screenshot.js -r . -d site --scan --report
+
+# Report พร้อม multi-viewport
+node screenshot.js -u https://example.com --widths 375 768 1440 --report
+
+# เปิด report ใน browser
+open screenshots/report.html
+```
+
+### Format & Quality
+
+```bash
+# JPEG (ไฟล์เล็กกว่า)
+node screenshot.js -u https://example.com --format jpeg
+
+# JPEG quality ต่ำ (เร็ว, ไฟล์เล็กมาก)
+node screenshot.js -u https://example.com --format jpeg --quality 60
+```
 
 ```bash
 # 6 parallel workers (ระวัง RAM ถ้าหน้าเยอะมาก)
@@ -632,6 +668,7 @@ node screenshot.js                                        # Interactive
 
 # ─── Common Options ───────────────────────────────────────
 -w 1280                  # Custom width
+--widths 375 768 1440    # Multi-viewport in one pass
 --device iphone-14       # Mobile
 --dark-mode              # Dark theme
 --delay 1200             # Longer wait
@@ -640,6 +677,9 @@ node screenshot.js                                        # Interactive
 --clip "#section"        # Element only
 --wait-for ".loaded"     # Wait for selector
 --pdf                    # PDF output
+--format jpeg            # JPEG output
+--quality 85             # Lossy quality (jpeg)
+--report                 # HTML gallery report
 --no-css                 # Raw screenshot
 
 # ─── Python ───────────────────────────────────────────────

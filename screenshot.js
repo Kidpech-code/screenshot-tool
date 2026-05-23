@@ -30,6 +30,26 @@ const MOBILE_PRESETS = {
   "pixel-7":    { width: 412,  height: 915,  deviceScaleFactor: 2, isMobile: true },
 };
 
+// ─── FORMAT HELPERS ──────────────────────────────────────────────────────────
+
+/** Map format name to file extension (with dot). 'jpeg' → '.jpg' */
+function formatToExt(format) {
+  return format === "jpeg" ? ".jpg" : ".png";
+}
+
+/**
+ * Apply widthSuffix and image format to a base .png output path.
+ * applyWidthAndFormat("out/folder/page.png", "_1440", "jpeg") → "out/folder/page_1440.jpg"
+ * @param {string} pngPath
+ * @param {string} widthSuffix - e.g. "_1440" or ""
+ * @param {string} format - "png" | "jpeg"
+ * @returns {string}
+ */
+function applyWidthAndFormat(pngPath, widthSuffix, format) {
+  const withSuffix = pngPath.replace(/\.png$/, widthSuffix + ".png");
+  return format === "png" ? withSuffix : withSuffix.replace(/\.png$/, formatToExt(format));
+}
+
 // ─── INJECT CSS ──────────────────────────────────────────────────────────────
 const INJECT_CSS = `
 /* 1. Stop ALL animations & transitions */
@@ -168,6 +188,142 @@ function mkdirp(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
 }
 
+// ─── HTML GALLERY REPORT ─────────────────────────────────────────────────────
+
+/**
+ * Escape a string for safe embedding in HTML attributes and text.
+ * @param {string} s
+ * @returns {string}
+ */
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * Generate a self-contained HTML gallery report after all screenshots are taken.
+ * @param {Array<{outputPath:string, label:string, width:number, ok:boolean}>} results
+ * @param {string} outRoot - absolute output directory path
+ * @param {object} args
+ */
+function generateReport(results, outRoot, args) {
+  const successful = results.filter((r) => r.ok);
+  if (successful.length === 0) {
+    console.warn("⚠️  No successful screenshots — report not generated.");
+    return;
+  }
+
+  const timestamp = new Date().toLocaleString();
+  const widthList = [...new Set(successful.map((r) => r.width))].sort((a, b) => a - b);
+  const isMultiWidth = widthList.length > 1;
+
+  // Group by viewport width
+  /** @type {Record<number, typeof successful>} */
+  const byWidth = Object.fromEntries(widthList.map((w) => [w, []]));
+  for (const r of successful) byWidth[r.width].push(r);
+
+  function makeCard(r) {
+    const rel = path.relative(outRoot, r.outputPath).replace(/\\/g, "/");
+    const isPdf = r.outputPath.endsWith(".pdf");
+    const name  = path.basename(r.outputPath);
+    const thumb = isPdf
+      ? `<div class="thumb pdf-thumb"><span>📄 PDF</span></div>`
+      : `<div class="thumb"><img loading="lazy" src="${escHtml(rel)}" alt="${escHtml(r.label)}" /></div>`;
+    return `
+    <div class="card">
+      <a href="${escHtml(rel)}" target="_blank" rel="noopener">${thumb}</a>
+      <div class="info">
+        <div class="label" title="${escHtml(r.label)}">${escHtml(r.label)}</div>
+        <div class="meta">${r.width}px &nbsp;&middot;&nbsp; ${escHtml(name)}</div>
+      </div>
+    </div>`;
+  }
+
+  let bodyContent = "";
+  if (isMultiWidth) {
+    for (const w of widthList) {
+      const cards = byWidth[w];
+      const noun  = cards.length !== 1 ? "pages" : "page";
+      bodyContent += `\n<section>\n<h2 class="vp-heading">Viewport: ${w}px <span class="count">${cards.length} ${noun}</span></h2>\n<div class="grid">`;
+      for (const r of cards) bodyContent += makeCard(r);
+      bodyContent += "\n</div>\n</section>";
+    }
+  } else {
+    bodyContent = `<div class="grid">`;
+    for (const r of successful) bodyContent += makeCard(r);
+    bodyContent += "\n</div>";
+  }
+
+  const totalFailed = results.filter((r) => !r.ok).length;
+  const failBadge   = totalFailed > 0
+    ? ` <span class="badge badge-fail">${totalFailed} failed</span>` : "";
+  const pageNoun    = successful.length !== 1 ? "pages" : "page";
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screenshot Report \u2014 ${escHtml(timestamp)}</title>
+<style>
+  :root {
+    --bg:#f4f4f5; --surface:#fff; --border:#e4e4e7;
+    --text:#18181b; --muted:#71717a; --accent:#2563eb;
+    --fail:#dc2626; --radius:10px;
+    --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+  }
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg:#09090b; --surface:#18181b; --border:#27272a;
+      --text:#fafafa; --muted:#a1a1aa; --accent:#60a5fa;
+      --fail:#f87171; --shadow:0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:28px 24px 60px}
+  header{margin-bottom:28px}
+  header h1{font-size:1.4rem;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  header p{margin-top:6px;font-size:.8125rem;color:var(--muted)}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:600;background:var(--accent);color:#fff}
+  .badge-fail{background:var(--fail)}
+  .vp-heading{font-size:1rem;font-weight:600;margin:32px 0 12px;color:var(--muted);
+              display:flex;align-items:center;gap:10px;
+              border-bottom:1px solid var(--border);padding-bottom:8px}
+  .count{font-size:.8125rem;font-weight:400}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+        box-shadow:var(--shadow);overflow:hidden;
+        transition:transform .15s ease,box-shadow .15s ease}
+  .card:hover{transform:translateY(-3px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+  .card a{display:block;text-decoration:none;color:inherit}
+  .thumb{width:100%;aspect-ratio:16/9;overflow:hidden;background:var(--bg)}
+  .thumb img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+  .pdf-thumb{display:flex;align-items:center;justify-content:center;font-size:2rem}
+  .info{padding:10px 12px 12px}
+  .label{font-size:.8125rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+  .meta{font-size:.75rem;color:var(--muted)}
+  footer{margin-top:48px;text-align:center;font-size:.75rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>&#128248; Screenshot Report <span class="badge">${successful.length} ${pageNoun}</span>${failBadge}</h1>
+  <p>Generated: ${escHtml(timestamp)} &nbsp;&middot;&nbsp; Output: ${escHtml(path.resolve(outRoot))}</p>
+</header>
+${bodyContent}
+<footer>Generated by <strong>screenshot-tool</strong> &nbsp;&middot;&nbsp; Playwright + Chromium</footer>
+</body>
+</html>`;
+
+  const reportPath = path.join(outRoot, "report.html");
+  mkdirp(outRoot);
+  fs.writeFileSync(reportPath, html, "utf-8");
+  console.log(`  \uD83D\uDCC4  Report   \u2192 ${path.resolve(reportPath)}`);
+}
+
 // ─── PROGRESS BAR (lightweight, no dependencies) ─────────────────────────────
 
 class ProgressBar {
@@ -220,6 +376,7 @@ async function takeScreenshot(page, url, outputPath, opts) {
     delayMs, customJs, noCss,
     clipSelector, waitFor, retries,
     exportPdf, localStorage: localStorageData,
+    format, quality,
   } = opts;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -284,17 +441,19 @@ async function takeScreenshot(page, url, outputPath, opts) {
         const element = await page.$(clipSelector);
         if (element) {
           await element.scrollIntoViewIfNeeded();
-          await element.screenshot({ path: outputPath });
+          const elemParams = { path: outputPath, type: format };
+          if (format !== "png") elemParams.quality = quality;
+          await element.screenshot(elemParams);
         } else {
           console.warn(`\n  ⚠️  Selector not found: ${clipSelector}`);
           return false;
         }
       } else {
-        await page.screenshot({ path: outputPath, fullPage: true });
+        const shotParams = { path: outputPath, fullPage: true, type: format };
+        if (format !== "png") shotParams.quality = quality;
+        await page.screenshot(shotParams);
       }
-
       return true;
-
     } catch (err) {
       if (attempt < retries) {
         // Use plain setTimeout — page.waitForTimeout() can throw if page crashed
@@ -316,9 +475,11 @@ async function takeScreenshot(page, url, outputPath, opts) {
 
 /**
  * @param {object} args
- * @returns {{ url: string, outputPath: string, label: string }[]}
+ * @param {number} currentWidth  - viewport width for this run
+ * @param {string} widthSuffix   - appended to filename before extension, e.g. "_1440" or ""
+ * @returns {{ url: string, outputPath: string, label: string, width: number }[]}
  */
-function buildTasks(args) {
+function buildTasks(args, currentWidth, widthSuffix) {
   const tasks = [];
   const outRoot = args.out;
 
@@ -334,8 +495,11 @@ function buildTasks(args) {
           continue;
         }
         const url = `file://${path.resolve(htmlFile)}`;
-        const outputPath = path.join(outRoot, folder, `${pageName}.png`);
-        tasks.push({ url, outputPath, label: `${folder}/${pageName}` });
+        const outputPath = applyWidthAndFormat(
+          path.join(outRoot, folder, `${pageName}.png`),
+          widthSuffix, args.format
+        );
+        tasks.push({ url, outputPath, label: `${folder}/${pageName}`, width: currentWidth });
       }
     }
 
@@ -348,16 +512,23 @@ function buildTasks(args) {
       for (const htmlFile of htmlFiles) {
         const url = `file://${path.resolve(htmlFile)}`;
         const rel = path.relative(folderPath, htmlFile).replace(/\.html$/, ".png");
-        const outputPath = path.join(outRoot, folder, rel);
-        tasks.push({ url, outputPath, label: `${folder}/${rel}` });
+        const outputPath = applyWidthAndFormat(
+          path.join(outRoot, folder, rel),
+          widthSuffix, args.format
+        );
+        const labelRel = rel.replace(/\.png$/, "");
+        tasks.push({ url, outputPath, label: `${folder}/${labelRel}`, width: currentWidth });
       }
     }
 
   // Mode B: direct URLs
   } else if (args.urls && args.urls.length > 0) {
     for (const url of args.urls) {
-      const outputPath = path.join(outRoot, urlToFilename(url));
-      tasks.push({ url, outputPath, label: url });
+      const outputPath = applyWidthAndFormat(
+        path.join(outRoot, urlToFilename(url)),
+        widthSuffix, args.format
+      );
+      tasks.push({ url, outputPath, label: url, width: currentWidth });
     }
 
   } else {
@@ -370,18 +541,21 @@ function buildTasks(args) {
 
 // ─── MAIN RUN ─────────────────────────────────────────────────────────────────
 
-async function run(args) {
-  const tasks = buildTasks(args);
+/**
+ * Run screenshots for a pre-built task list at a specific viewport width.
+ * Returns an array of result objects for report generation.
+ * @param {object} args
+ * @param {{ url:string, outputPath:string, label:string, width:number }[]} tasks
+ * @param {number} currentWidth
+ * @returns {Promise<{outputPath:string, label:string, width:number, ok:boolean}[]>}
+ */
+async function runSingle(args, tasks, currentWidth) {
+  const results = [];
 
-  if (tasks.length === 0) {
-    console.warn("⚠️  No pages found to screenshot.");
-    return;
-  }
-
-  const ext = args.pdf ? "PDF" : "PNG";
+  const ext        = args.pdf ? "PDF" : args.format.toUpperCase();
   const deviceLabel = args.device ? ` [${args.device}]` : "";
   const darkLabel   = args.darkMode ? " 🌙 dark" : "";
-  console.log(`\n📸  Capturing ${tasks.length} page(s) → ${ext} @ ${args.width}px wide${deviceLabel}${darkLabel}\n`);
+  console.log(`\n📸  Capturing ${tasks.length} page(s) → ${ext} @ ${currentWidth}px wide${deviceLabel}${darkLabel}\n`);
 
   const bar = new ProgressBar(tasks.length);
 
@@ -396,6 +570,8 @@ async function run(args) {
     exportPdf:      args.pdf || false,
     cookies:        args.cookiesData || null,
     localStorage:   args.localStorageData || null,
+    format:         args.format,
+    quality:        args.quality,
   };
 
   const browser = await chromium.launch({ headless: true });
@@ -405,7 +581,7 @@ async function run(args) {
     // Set viewport + device properties at context level (deviceScaleFactor
     // can only be set here, not via page.setViewportSize)
     const ctxOptions = {
-      viewport: { width: args.width, height: args.height },
+      viewport: { width: currentWidth, height: args.height },
     };
     if (args.deviceScaleFactor) ctxOptions.deviceScaleFactor = args.deviceScaleFactor;
     if (args.isMobile) {
@@ -424,13 +600,19 @@ async function run(args) {
 
     async function workerFn(workerPage) {
       while (taskIndex < tasks.length) {
-        const { url, outputPath } = tasks[taskIndex++];
+        const { url, outputPath, label } = tasks[taskIndex++];
         let ok = false;
         try {
           ok = await takeScreenshot(workerPage, url, outputPath, screenshotOpts);
         } catch (err) {
           console.error(`\n  💥  Worker error (${url}): ${err && err.message ? err.message : String(err)}`);
         }
+        // When --pdf is used, takeScreenshot saves a .pdf file by replacing the extension.
+        // Record the actual path so the report can reference it correctly.
+        const actualPath = (args.pdf && !outputPath.endsWith(".pdf"))
+          ? outputPath.replace(/\.\w+$/, ".pdf")
+          : outputPath;
+        results.push({ outputPath: actualPath, label, width: currentWidth, ok });
         bar.tick(ok);
       }
     }
@@ -445,10 +627,37 @@ async function run(args) {
 
   const ok   = bar.ok;
   const fail = bar.fail;
-
   console.log("─".repeat(44));
   console.log(`  Done : ${ok} ✅   Failed : ${fail} ❌`);
   console.log(`  Output → ${path.resolve(args.out)}`);
+
+  return results;
+}
+
+/**
+ * Entry point: iterate over all requested widths, capture, then generate report.
+ * @param {object} args
+ */
+async function run(args) {
+  // If --widths was given use those; otherwise fall back to the single --width value.
+  const widths      = (args.widths && args.widths.length > 0) ? args.widths : [args.width];
+  const isMultiWidth = widths.length > 1;
+  const allResults  = [];
+
+  for (const w of widths) {
+    const widthSuffix = isMultiWidth ? `_${w}` : "";
+    const tasks = buildTasks(args, w, widthSuffix);
+    if (tasks.length === 0) {
+      console.warn("⚠️  No pages found to screenshot.");
+      continue;
+    }
+    const results = await runSingle(args, tasks, w);
+    allResults.push(...results);
+  }
+
+  if (args.report && allResults.length > 0) {
+    generateReport(allResults, path.resolve(args.out), args);
+  }
 }
 
 // ─── INTERACTIVE MODE ─────────────────────────────────────────────────────────
@@ -467,9 +676,15 @@ async function interactiveMode() {
   }
   const pagesRaw = (await ask("3. Page names without .html (Enter = auto-scan all): ")).trim();
   const pages    = pagesRaw ? pagesRaw.split(/\s+/) : null;
-  const widthRaw = (await ask("4. Viewport width in px [1440]: ")).trim();
-  const width    = Number(widthRaw) > 0 ? Number(widthRaw) : 1440;
-  const out      = (await ask("5. Output folder [./screenshots]: ")).trim() || "./screenshots";
+  const widthsRaw = (await ask("4. Viewport width(s) in px, space-separated [1440]: ")).trim();
+  const widthNums  = widthsRaw
+    ? widthsRaw.split(/\s+/).map(Number).filter((n) => n > 0)
+    : [1440];
+  const widths     = widthNums.length > 1 ? widthNums : null;
+  const width      = widthNums[0] || 1440;
+  const out        = (await ask("5. Output folder [./screenshots]: ")).trim() || "./screenshots";
+  const reportRaw  = (await ask("6. Generate HTML gallery report? [y/N]: ")).trim().toLowerCase();
+  const report     = reportRaw === "y" || reportRaw === "yes";
 
   rl.close();
 
@@ -496,6 +711,10 @@ async function interactiveMode() {
     isMobile:          null,
     cookiesData:       null,
     localStorageData:  null,
+    widths,
+    format:            "png",
+    quality:           80,
+    report,
   };
 }
 
@@ -514,6 +733,9 @@ const DEFAULTS = {
   noCss:       false,
   darkMode:    false,
   pdf:         false,
+  format:      "png",
+  quality:     80,
+  report:      false,
 };
 
 function parseArgs(argv) {
@@ -544,6 +766,10 @@ function parseArgs(argv) {
     config:          null,
     cookiesData:     null,
     localStorageData: null,
+    widths:          null,
+    format:          undefined,
+    quality:         undefined,
+    report:          undefined,
   };
 
   const a = argv.slice(2);
@@ -590,6 +816,35 @@ function parseArgs(argv) {
       case "--cookies":                 args.cookies = next(); break;
       case "--local-storage":           args.localStorageRaw = next(); break;
       case "--config":                  args.config = next(); break;
+      case "--widths": {
+        const vals = nextMany().map((v) => {
+          const n = parseInt(v, 10);
+          if (isNaN(n) || n < 1) { console.error("❌  --widths values must be positive integers"); process.exit(1); }
+          return n;
+        });
+        if (vals.length === 0) { console.error("❌  --widths requires at least one value"); process.exit(1); }
+        args.widths = (args.widths || []).concat(vals);
+        break;
+      }
+      case "--format": {
+        const f = next();
+        if (!["png", "jpeg"].includes(f)) {
+          console.error("❌  --format must be one of: png, jpeg");
+          process.exit(1);
+        }
+        args.format = f;
+        break;
+      }
+      case "--quality": {
+        const v = parseInt(next(), 10);
+        if (isNaN(v) || v < 0 || v > 100) {
+          console.error("❌  --quality must be an integer between 0 and 100");
+          process.exit(1);
+        }
+        args.quality = v;
+        break;
+      }
+      case "--report":  args.report = true; break;
       default:
         console.error(`❌  Unknown flag: ${flag}. Run with --help for usage.`);
         process.exit(1);
@@ -606,19 +861,33 @@ function parseArgs(argv) {
         continue;
       }
       if (args[k] === undefined || args[k] === null || (Array.isArray(args[k]) && args[k].length === 0)) {
-        // Validate array fields (urls/dirs/pages must be arrays)
-        if ((k === "urls" || k === "dirs" || k === "pages") && !Array.isArray(val)) {
+        // Validate array fields (urls/dirs/pages/widths must be arrays)
+        if ((k === "urls" || k === "dirs" || k === "pages" || k === "widths") && !Array.isArray(val)) {
           console.warn(`⚠️  Config key "${key}" expects an array — got ${typeof val}, ignored`);
           continue;
         }
         // Coerce and validate numeric fields so "1440" string works and "abc" is rejected
-        if (k === "width" || k === "height" || k === "delay" || k === "retries" || k === "concurrency" || k === "deviceScaleFactor") {
+        if (k === "width" || k === "height" || k === "delay" || k === "retries" || k === "concurrency" || k === "deviceScaleFactor" || k === "quality") {
           const num = Number(val);
           if (isNaN(num)) {
             console.warn(`⚠️  Config key "${key}" expects a number — got "${val}", ignored`);
             continue;
           }
           args[k] = num;
+        } else if (k === "format") {
+          if (!["png", "jpeg"].includes(val)) {
+            console.warn(`⚠️  Config key "format" must be "png" or "jpeg" — got "${val}", ignored`);
+            continue;
+          }
+          args[k] = val;
+        } else if (k === "widths") {
+          // Each element must be a positive integer
+          const nums = val.map(Number);
+          if (nums.some((n) => isNaN(n) || n < 1)) {
+            console.warn(`⚠️  Config key "widths" values must be positive integers — ignored`);
+            continue;
+          }
+          args.widths = (args.widths || []).concat(nums.map(Math.round));
         } else {
           args[k] = val;
         }
@@ -642,6 +911,27 @@ function parseArgs(argv) {
     args.height            = preset.height;
     args.deviceScaleFactor = preset.deviceScaleFactor;
     args.isMobile          = preset.isMobile;
+  }
+
+  // ── Cross-option conflict checks ──────────────────────────────────────────
+  if (args.widths && args.widths.length > 0) {
+    if (args.device) {
+      console.error("❌  --widths and --device cannot be used together. A device preset sets a fixed viewport.");
+      process.exit(1);
+    }
+    // Deduplicate widths (user may have overlapping CLI + config values)
+    args.widths = [...new Set(args.widths)].sort((a, b) => a - b);
+  }
+
+  if (args.quality !== undefined) {
+    const effectiveFormat = args.format; // defaults have been applied
+    if (effectiveFormat === "png") {
+      console.warn("⚠️  --quality is ignored for PNG (lossless). Use --format jpeg.");
+    }
+  }
+
+  if (args.pdf && args.format !== "png") {
+    console.warn("⚠️  --format is ignored when --pdf is used.");
   }
 
   // Parse cookies JSON
@@ -693,9 +983,12 @@ SOURCE MODES
 OUTPUT
   -o, --out <path>              Output directory (default: ./screenshots)
       --pdf                     Export PDF instead of PNG
+      --format <type>           Image format: png (default), jpeg
+      --quality <0-100>         Lossy quality for jpeg (default: 80)
 
 VIEWPORT
   -w, --width <px>              Viewport width (default: 1440)
+      --widths <px...>          Multiple widths in one pass: --widths 375 768 1440
       --height <px>             Viewport height (default: 900)
       --device <preset>         Mobile preset: ${Object.keys(MOBILE_PRESETS).join(", ")}
       --dark-mode               Emulate dark color scheme
@@ -713,6 +1006,9 @@ AUTH / STATE
       --cookies <json>          JSON array of cookies
       --local-storage <json>    JSON object to inject into localStorage
 
+REPORT
+      --report                  Generate report.html gallery in output folder
+
 CONFIG
       --config <file>           Path to .screenshotrc.json config file
   -h, --help                    Show this help
@@ -722,6 +1018,8 @@ EXAMPLES
   node screenshot.js -r /project -d pattern_a pattern_b -g index about contact
   node screenshot.js -u https://example.com https://example.com/about
   node screenshot.js -u https://example.com --device iphone-14
+  node screenshot.js -u https://example.com --widths 375 768 1440 --report
+  node screenshot.js -u https://example.com --format webp --quality 85
   node screenshot.js -u https://example.com --dark-mode --delay 1200 -c 5
   node screenshot.js -u https://example.com --pdf
   node screenshot.js -u https://example.com --clip "#hero-section"
