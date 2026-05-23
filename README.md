@@ -66,9 +66,18 @@ node screenshot.js -u https://github.com/Kidpech-code --widths 375 768 1440
 
 > ชื่อไฟล์มี suffix `_<width>` → `page_375.png`, `page_768.png`, `page_1440.png`
 
-| 375px | 768px | 1440px |
-|:-----:|:-----:|:------:|
-| <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_375.png" width="210" alt="375px"> | <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_768.png" width="210" alt="768px"> | <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_1440.png" width="210" alt="1440px"> |
+<table>
+  <tr>
+    <th align="center">375px</th>
+    <th align="center">768px</th>
+    <th align="center">1440px</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_375.png" width="210" alt="375px"></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_768.png" width="210" alt="768px"></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_1440.png" width="210" alt="1440px"></td>
+  </tr>
+</table>
 
 ---
 
@@ -99,9 +108,18 @@ node screenshot.js -u https://github.com/Kidpech-code --widths 375 768 1440 --re
 # สร้าง report.html รวมทุกภาพ grouping ตาม URL → เปิดด้วย: open screenshots/report.html
 ```
 
-| 375px | 768px | 1440px |
-|:-----:|:-----:|:------:|
-| <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_375.png" width="210" alt="report 375px"> | <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_768.png" width="210" alt="report 768px"> | <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_1440.png" width="210" alt="report 1440px"> |
+<table>
+  <tr>
+    <th align="center">375px</th>
+    <th align="center">768px</th>
+    <th align="center">1440px</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_375.png" width="210" alt="report 375px"></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_768.png" width="210" alt="report 768px"></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_1440.png" width="210" alt="report 1440px"></td>
+  </tr>
+</table>
 
 ---
 
@@ -342,13 +360,13 @@ node screenshot.js
 
 ### Viewport (ขนาดหน้าจอ)
 
-| Flag                | ย่อ  | Default | คำอธิบาย                                 |
-| ------------------- | ---- | ------- | ---------------------------------------- |
-| `--width <px>`      | `-w` | `1440`  | ความกว้าง viewport                       |
+| Flag                | ย่อ  | Default | คำอธิบาย                                                                                    |
+| ------------------- | ---- | ------- | ------------------------------------------------------------------------------------------- |
+| `--width <px>`      | `-w` | `1440`  | ความกว้าง viewport                                                                          |
 | `--widths <px...>`  | —    | —       | หลาย viewport ในรอบเดียว: `375 768 1440` — ชื่อไฟล์มี suffix `_<width>` เช่น `page_375.png` |
-| `--height <px>`     | —    | `900`   | ความสูง viewport เริ่มต้น                |
-| `--device <preset>` | —    | —       | Mobile preset (ดูตารางด้านล่าง)          |
-| `--dark-mode`       | —    | false   | Emulate dark color scheme                |
+| `--height <px>`     | —    | `900`   | ความสูง viewport เริ่มต้น                                                                   |
+| `--device <preset>` | —    | —       | Mobile preset (ดูตารางด้านล่าง)                                                             |
+| `--dark-mode`       | —    | false   | Emulate dark color scheme                                                                   |
 
 > **หมายเหตุ:** `--widths` และ `--device` ใช้พร้อมกันไม่ได้
 
