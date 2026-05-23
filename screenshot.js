@@ -207,9 +207,8 @@ function escHtml(s) {
  * Generate a self-contained HTML gallery report after all screenshots are taken.
  * @param {Array<{outputPath:string, label:string, width:number, ok:boolean}>} results
  * @param {string} outRoot - absolute output directory path
- * @param {object} args
  */
-function generateReport(results, outRoot, args) {
+function generateReport(results, outRoot) {
   const successful = results.filter((r) => r.ok);
   if (successful.length === 0) {
     console.warn("⚠️  No successful screenshots — report not generated.");
@@ -656,7 +655,16 @@ async function run(args) {
   }
 
   if (args.report && allResults.length > 0) {
-    generateReport(allResults, path.resolve(args.out), args);
+    generateReport(allResults, path.resolve(args.out));
+  }
+
+  // Set exit code so CI/CD pipelines can detect failures.
+  // Use process.exitCode (not process.exit) so any pending I/O finishes cleanly.
+  const totalFail = allResults.filter((r) => !r.ok).length;
+  if (allResults.length > 0 && totalFail === allResults.length) {
+    process.exitCode = 2;  // all failed
+  } else if (totalFail > 0) {
+    process.exitCode = 1;  // partial failure
   }
 }
 
@@ -688,7 +696,10 @@ async function interactiveMode() {
 
   rl.close();
 
+  // Build the args object by overlaying interactive values onto DEFAULTS so
+  // future DEFAULTS changes propagate automatically.
   return {
+    ...DEFAULTS,
     urls: [],
     dirs,
     pages,
@@ -696,24 +707,15 @@ async function interactiveMode() {
     root,
     out,
     width,
-    height:      900,
-    delay:       800,
-    js:          null,
-    noCss:       false,
-    clip:        null,
-    waitFor:     null,
-    retries:     2,
-    concurrency: 3,
-    darkMode:    false,
-    pdf:         false,
+    js:                null,
+    clip:              null,
+    waitFor:           null,
     device:            null,
     deviceScaleFactor: null,
     isMobile:          null,
     cookiesData:       null,
     localStorageData:  null,
     widths,
-    format:            "png",
-    quality:           80,
     report,
   };
 }
@@ -842,6 +844,7 @@ function parseArgs(argv) {
           process.exit(1);
         }
         args.quality = v;
+        args._qualityExplicit = true;
         break;
       }
       case "--report":  args.report = true; break;
@@ -923,23 +926,33 @@ function parseArgs(argv) {
     args.widths = [...new Set(args.widths)].sort((a, b) => a - b);
   }
 
-  if (args.quality !== undefined) {
-    const effectiveFormat = args.format; // defaults have been applied
-    if (effectiveFormat === "png") {
-      console.warn("⚠️  --quality is ignored for PNG (lossless). Use --format jpeg.");
+  // Quality only matters for lossy formats — and only warn if user explicitly set it.
+  if (args._qualityExplicit && args.format === "png" && !args.pdf) {
+    console.warn("⚠️  --quality is ignored for PNG (lossless). Use --format jpeg.");
+  }
+
+  if (args.pdf) {
+    if (args.format !== "png") {
+      console.warn("⚠️  --format is ignored when --pdf is used.");
+    }
+    if (args.clip) {
+      console.warn("⚠️  --clip is ignored when --pdf is used (PDF always exports full page).");
     }
   }
 
-  if (args.pdf && args.format !== "png") {
-    console.warn("⚠️  --format is ignored when --pdf is used.");
+  // Source mode precedence: Mode A/C (dirs) > Mode B (urls). Warn if both given.
+  if (args.urls && args.urls.length > 0 && args.dirs && args.dirs.length > 0) {
+    console.warn("⚠️  --urls is ignored because --dirs was also provided. Use one source mode at a time.");
   }
+
+
 
   // Parse cookies JSON
   if (args.cookies) {
     try {
       args.cookiesData = JSON.parse(args.cookies);
-    } catch {
-      console.error("❌  --cookies must be valid JSON array");
+    } catch (e) {
+      console.error(`❌  --cookies must be valid JSON array: ${e.message}`);
       process.exit(1);
     }
     if (!Array.isArray(args.cookiesData)) {
@@ -952,8 +965,8 @@ function parseArgs(argv) {
   if (args.localStorageRaw) {
     try {
       args.localStorageData = JSON.parse(args.localStorageRaw);
-    } catch {
-      console.error("❌  --local-storage must be valid JSON object");
+    } catch (e) {
+      console.error(`❌  --local-storage must be valid JSON object: ${e.message}`);
       process.exit(1);
     }
     if (typeof args.localStorageData !== "object" || Array.isArray(args.localStorageData) || args.localStorageData === null) {
@@ -1019,7 +1032,7 @@ EXAMPLES
   node screenshot.js -u https://example.com https://example.com/about
   node screenshot.js -u https://example.com --device iphone-14
   node screenshot.js -u https://example.com --widths 375 768 1440 --report
-  node screenshot.js -u https://example.com --format webp --quality 85
+  node screenshot.js -u https://example.com --format jpeg --quality 85
   node screenshot.js -u https://example.com --dark-mode --delay 1200 -c 5
   node screenshot.js -u https://example.com --pdf
   node screenshot.js -u https://example.com --clip "#hero-section"
