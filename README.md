@@ -7,19 +7,101 @@
 
 ## สารบัญ
 
-1. [Tech Stack](#tech-stack)
-2. [ความต้องการ](#ความต้องการ)
-3. [การติดตั้ง](#การติดตั้ง)
-4. [โครงสร้างไฟล์](#โครงสร้างไฟล์)
-5. [3 โหมดการใช้งาน](#3-โหมดการใช้งาน)
-6. [ตัวเลือก CLI ทั้งหมด](#ตัวเลือก-cli-ทั้งหมด)
-7. [ตัวอย่างการใช้งาน](#ตัวอย่างการใช้งาน)
-8. [Mobile & Dark Mode](#mobile--dark-mode)
-9. [การยืนยันตัวตน (Auth)](#การยืนยันตัวตน-auth)
-10. [Config File](#config-file)
-11. [Python Version](#python-version)
-12. [ฟีเจอร์เทคนิค](#ฟีเจอร์เทคนิค)
-13. [Troubleshooting](#troubleshooting)
+1. [ตัวอย่าง Output](#ตัวอย่าง-output)
+2. [Tech Stack](#tech-stack)
+3. [ความต้องการ](#ความต้องการ)
+4. [การติดตั้ง](#การติดตั้ง)
+5. [โครงสร้างไฟล์](#โครงสร้างไฟล์)
+6. [3 โหมดการใช้งาน](#3-โหมดการใช้งาน)
+7. [ตัวเลือก CLI ทั้งหมด](#ตัวเลือก-cli-ทั้งหมด)
+8. [ตัวอย่างการใช้งาน](#ตัวอย่างการใช้งาน)
+9. [Mobile & Dark Mode](#mobile--dark-mode)
+10. [การยืนยันตัวตน (Auth)](#การยืนยันตัวตน-auth)
+11. [Config File](#config-file)
+12. [Python Version](#python-version)
+13. [ฟีเจอร์เทคนิค](#ฟีเจอร์เทคนิค)
+14. [Troubleshooting](#troubleshooting)
+
+---
+
+## ตัวอย่าง Output
+
+> ภาพด้านล่างถ่ายจาก `https://github.com/Kidpech-code` โดยใช้ tool นี้จริงๆ
+
+### 1. Desktop 1440px (default)
+
+```bash
+node screenshot.js -u https://github.com/Kidpech-code
+```
+
+<img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/01-desktop-1440/github.com_Kidpech-code.png" width="700" alt="Desktop 1440px">
+
+---
+
+### 2. Mobile — `--device iphone-14`
+
+```bash
+node screenshot.js -u https://github.com/Kidpech-code --device iphone-14
+```
+
+<img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/02-mobile-iphone14/github.com_Kidpech-code.png" width="390" alt="Mobile iPhone 14">
+
+---
+
+### 3. Dark Mode — `--dark-mode`
+
+```bash
+node screenshot.js -u https://github.com/Kidpech-code --dark-mode
+```
+
+<img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/03-dark-mode/github.com_Kidpech-code.png" width="700" alt="Dark Mode">
+
+---
+
+### 4. Multi-Viewport — `--widths 375 768 1440`
+
+```bash
+node screenshot.js -u https://github.com/Kidpech-code --widths 375 768 1440
+```
+
+> ชื่อไฟล์มี suffix `_<width>` → `page_375.png`, `page_768.png`, `page_1440.png`
+
+| 375px | 768px | 1440px |
+|:-----:|:-----:|:------:|
+| <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_375.png" width="210" alt="375px"> | <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_768.png" width="210" alt="768px"> | <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/04-multi-viewport/github.com_Kidpech-code_1440.png" width="210" alt="1440px"> |
+
+---
+
+### 5. JPEG Format — `--format jpeg`
+
+```bash
+node screenshot.js -u https://github.com/Kidpech-code --format jpeg --quality 85
+```
+
+<img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/05-jpeg/github.com_Kidpech-code.jpg" width="700" alt="JPEG format">
+
+---
+
+### 6. Clip Element — `--clip "header"`
+
+```bash
+node screenshot.js -u https://github.com/Kidpech-code --clip "header"
+```
+
+<img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/06-clip-header/github.com_Kidpech-code.png" alt="Clip header element">
+
+---
+
+### 7. HTML Gallery Report — `--report`
+
+```bash
+node screenshot.js -u https://github.com/Kidpech-code --widths 375 768 1440 --report
+# สร้าง report.html รวมทุกภาพ grouping ตาม URL → เปิดด้วย: open screenshots/report.html
+```
+
+| 375px | 768px | 1440px |
+|:-----:|:-----:|:------:|
+| <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_375.png" width="210" alt="report 375px"> | <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_768.png" width="210" alt="report 768px"> | <img src="https://raw.githubusercontent.com/Kidpech-code/image_public/main/examples/07-report/github.com_Kidpech-code_1440.png" width="210" alt="report 1440px"> |
 
 ---
 
@@ -263,7 +345,7 @@ node screenshot.js
 | Flag                | ย่อ  | Default | คำอธิบาย                                 |
 | ------------------- | ---- | ------- | ---------------------------------------- |
 | `--width <px>`      | `-w` | `1440`  | ความกว้าง viewport                       |
-| `--widths <px...>`  | —    | —       | หลาย viewport ในรอบเดียว: `375 768 1440` |
+| `--widths <px...>`  | —    | —       | หลาย viewport ในรอบเดียว: `375 768 1440` — ชื่อไฟล์มี suffix `_<width>` เช่น `page_375.png` |
 | `--height <px>`     | —    | `900`   | ความสูง viewport เริ่มต้น                |
 | `--device <preset>` | —    | —       | Mobile preset (ดูตารางด้านล่าง)          |
 | `--dark-mode`       | —    | false   | Emulate dark color scheme                |
